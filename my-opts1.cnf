@@ -1,0 +1,3 @@
+[mysqld]
+datadir = C:\Python\Inventory\data
+port = 3500
