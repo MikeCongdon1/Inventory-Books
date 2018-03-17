@@ -86,7 +86,7 @@ func concatTitleAuth(Ti string, Au string) {
 				Title1st = Title
 			}
 		}
-
+		// TODO something is wrong with the Concat qty builder
 		fmt.Println("UPDATE bookInv SET " + strconv.Itoa(QtyLoc) + " Ti " + Title1st)
 		statement, err := DBCon.Prepare("UPDATE bookInv SET qty=?,modified=? where id=?")
 		errcheck(err)
@@ -151,7 +151,7 @@ func readTitleAuth(Ti string, Au string) (Id int, Title string, Qty int) {
 
 func addSome() {
 
-	addOneBook("Huck Joe", "Mark Twain")
+	addOneBook("Huck Finn", "Mark Twain")
 	/*
 		rows, err := DBCon.Query("SELECT * FROM bookInv")
 		errcheck(err)
