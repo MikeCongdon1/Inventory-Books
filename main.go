@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -12,27 +11,10 @@ import (
 // DBCon based on https://astaxie.gitbooks.io/build-web-application-with-golang/en/05.2.html
 // globals
 var DBCon *sql.DB // Note the sql package provides the namespace
+type Result sql.Result
 
-func create(name string) {
-
-	_, err := DBCon.Exec("CREATE DATABASE IF NOT EXISTS " + name)
-	errcheck(err)
-	DBCon.Close()
-
-	DBCon, err = sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/"+name)
-	errcheck(err)
-
-	_, err = DBCon.Exec("USE " + name)
-	errcheck(err)
-
-	_, err = DBCon.Exec("CREATE TABLE IF NOT EXISTS bookInv ( id MEDIUMINT NOT NULL AUTO_INCREMENT, title varchar(32), author varchar(32), qty MEDIUMINT, modified varchar(32), Primary Key (id) )")
-	errcheck(err)
-
-}
-
-func addOneBook(title string, auth string) {
-
-	id1, ti1, qty1 := readTitleAuth(title, auth)
+func AddOneBook(title string, auth string) Result {
+	id1, ti1, qty1 := ReadTitleAuth(title, auth)
 
 	fmt.Println("ID: " + strconv.Itoa(id1) + " Ti:" + ti1 + " qty: " + strconv.Itoa(qty1))
 
@@ -41,7 +23,7 @@ func addOneBook(title string, auth string) {
 		errcheck(err)
 		res, err := statement.Exec(qty1+1, getTime(), id1)
 		errcheck(err)
-		fmt.Println(res)
+		return res
 
 	} else {
 		statement, err := DBCon.Prepare("INSERT bookInv SET title=?,author=?,qty=?,modified=?")
@@ -49,16 +31,45 @@ func addOneBook(title string, auth string) {
 
 		res, err := statement.Exec(title, auth, 1, getTime())
 		errcheck(err)
-		fmt.Println(res)
+		return res
 
 	}
-
 }
+func DeleteOneBook(title string, auth string) Result {
+	//	comment
+	fmt.Println("trying Add OneBook")
+	id1, ti1, qty1 := ReadTitleAuth(title, auth)
+
+	fmt.Println("ID: " + strconv.Itoa(id1) + " Ti:" + ti1 + " qty: " + strconv.Itoa(qty1))
+
+	if ti1 != "" {
+		// check that qty1 is greater than 1:
+		// in the future if it's 1, we'll delete the entry instead of updating. for now, we'll just subtract
+		statement, err := DBCon.Prepare("UPDATE bookInv SET qty=?,modified=? where id=?")
+		errcheck(err)
+		qty1--
+		res, err := statement.Exec(qty1, getTime(), id1)
+		errcheck(err)
+		return res
+
+	} else {
+
+		statement, err := DBCon.Prepare("INSERT bookInv SET title=?,author=?,qty=?,modified=?")
+		errcheck(err)
+		res, err := statement.Exec(title, auth, -1, getTime())
+		errcheck(err)
+		fmt.Println("Book Did Not Exist in System!!!  ")
+		return res
+
+	}
+}
+
 func concatTitleAuth(Ti string, Au string) {
 	var QtyLoc int
 	var ID1st int
 	var IDList []int
 	var Title1st string
+	//DBCon.Stats
 	rows, err := DBCon.Query("SELECT * FROM bookInv where title=? && author=?", Ti, Au)
 	errcheck(err)
 	if rows != nil {
@@ -105,12 +116,9 @@ func concatTitleAuth(Ti string, Au string) {
 	}
 
 }
-func getTime() (th string) {
-	t := time.Now()
-	th = t.Format("2006-01-02 15:04:05")
-	return th
-}
-func readTitleAuth(Ti string, Au string) (Id int, Title string, Qty int) {
+
+func ReadTitleAuth(Ti string, Au string) (Id int, Title string, Qty int) {
+
 	concatTitleAuth(Ti, Au)
 	/*rows, err := DBCon.Query("SELECT id,title, author,qty FROM bookInv where title=? && author=? limit 1", Ti, Au)
 	fmt.Println(&rows)
@@ -149,71 +157,14 @@ func readTitleAuth(Ti string, Au string) (Id int, Title string, Qty int) {
 
 }
 
-func addSome() {
-
-	addOneBook("Huck Finn", "Mark Twain")
-	/*
-		rows, err := DBCon.Query("SELECT * FROM bookInv")
-		errcheck(err)
-		for rows.Next() {
-			var uid int
-			var title string
-			var author string
-			var qty int
-			var modified string
-
-			err = rows.Scan(&uid, &title, &author, &qty, &modified)
-			errcheck(err)
-
-			fmt.Println(uid)
-			fmt.Println(title)
-			fmt.Println(author)
-			fmt.Println(modified)
-		}*/
-	//readTitleAuth()
-	/*
-	   Prepare("INSERT userinfo SET username=?,departname=?,created=?")
-	   		checkErr(err)
-	*/
-}
-
-func update() {
-
-	/*
-		id, err := res.LastInsertId()
-		errcheck(err)
-
-		// update
-
-		statement, err = DBCon.Prepare("update bookInv set title=? where id=?")
-		errcheck(err)
-
-		res, err = statement.Exec("Tom Sawyer", id)
-		errcheck(err)
-
-		affect, err := res.RowsAffected()
-		errcheck(err)
-
-		fmt.Println(affect)
-
-		rows, err := DBCon.Query("SELECT * FROM bookInv")
-		errcheck(err)
-	*/
-
-}
+// comment
 
 func main() {
-	var err error
-	DBCon, err = sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/")
+	OpenDB()
 
-	errcheck(err)
-	defer DBCon.Close()
-	name := "books"
-
-	fmt.Println(sql.Drivers())
-
-	create(name)
 	addSome()
+
+	defer DBCon.Close()
 
 }
 
