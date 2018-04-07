@@ -50,9 +50,7 @@ func TestReadTitleAuth(t *testing.T) {
 		Ti string
 		Au string
 	}
-	//var tt args
-	//tt.Au = "Mark Twain"
-	//tt.Ti = "Tom Sawyer"
+
 	tests := []struct {
 		name      string
 		args      ar
